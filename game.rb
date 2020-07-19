@@ -1,20 +1,27 @@
+require "yaml"
 class Hangman
     attr_reader :dictionary, :current_guess, :previous_guesses
-    def initialize
+    def initialize(secret_word = "", guesses_remaining =  5, previous_guesses = [], current_guess = [])
         @dictionary = File.readlines("5desk.txt").map(&:chomp)
-        @secret_word = word_picker
-        @guesses_remaining = 5
-        @previous_guesses = []
-        @current_guess = []
+        @secret_word = secret_word
+        @guesses_remaining = guesses_remaining
+        @previous_guesses = previous_guesses
+        @current_guess = current_guess
+        run
     end
 
     def run
         puts "Welcome to Hangman!"
+        initialize_secret_word
         initialize_guess_array
         while !win?
         display
         break if lose?
         guess = get_input
+        return if guess == "exit"
+        if guess == "save"
+            save_game
+        else
         while !valid_input?(guess)
             puts "Invalid input, please try a different letter."
             guess = get_input
@@ -22,7 +29,12 @@ class Hangman
         lose_guess if !good_guess(guess) || already_attempted(guess)
         self.previous_guesses << guess
         end
+    end
         puts "Game Over"
+    end
+
+    def save_game
+        File.write("saved_game.yaml", to_yaml)
     end
 
     def word_picker
@@ -38,10 +50,8 @@ class Hangman
         puts "Guesses remaining: #{@guesses_remaining}"
         puts "Previous guesses: #{@previous_guesses}"
         puts "Current guess: #{@current_guess}"
-    end
-
-    def initialize_guess_array
-        self.secret_word.length.times {current_guess << "_"}
+        puts "Type \"save\" to save current game"
+        puts "Type exit to exit game"
     end
 
     def good_guess(guess)
@@ -92,15 +102,52 @@ class Hangman
         false
     end
 
+    #save/load YAML
+    def to_yaml
+        YAML.dump ({
+            :guesses_remaining => @guesses_remaining,
+            :previous_guesses => @previous_guesses,
+            :current_guess => @current_guess,
+            :secret_word => @secret_word
+        })
+    end
+
+    def self.from_yaml(file_name)
+        data = YAML.load(file_name)
+        self.new(data[:guesses_remaining], data[:previous_guesses], data[:current_guess], data[:secret_word])
+    end
+
     private
     def secret_word
         @secret_word
     end
 
+    def secret_word=(new_word)
+        @secret_word = new_word
+    end
+
     def lose_guess
         @guesses_remaining -= 1
     end
+
+    
+    def initialize_secret_word
+        self.secret_word = word_picker
+    end
+
+    def initialize_guess_array
+        self.secret_word.length.times {current_guess << "_"}
+    end
+
 end
 
-a = Hangman.new
-a.run
+puts "Press n for new game or l to load past game"
+command = gets.chomp.downcase
+case command
+when "n"
+    Hangman.new
+when "l"
+    Hangman.from_yaml(File.open("saved_game.yaml"))
+else
+    puts "Sorry that command is not recognized"
+end

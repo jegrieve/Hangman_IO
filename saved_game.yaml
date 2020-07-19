@@ -1,0 +1,18 @@
+---
+:guesses_remaining: 3
+:previous_guesses:
+- a
+- b
+- c
+- d
+- e
+:current_guess:
+- c
+- _
+- _
+- _
+- _
+- _
+- d
+- e
+:secret_word: chloride
